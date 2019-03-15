@@ -11,8 +11,8 @@ const parseQuery = (url) => {
 };
 
 // Those functions are the same used in k-line mocked ranger event
-const minDay = 6;
-const maxDay = 10;
+const minDay = 0.9;
+const maxDay = 1;
 const fakePeriod = 86400;
 
 const timeToPrice = (time) => {

@@ -1,5 +1,5 @@
 const WebSocket = require('ws');
-const Helpers = require('./helpers')
+const Helpers = require('./helpers');
 
 function isSubscribed(streams, routingKey) {
   for (const i in streams) {
@@ -24,8 +24,8 @@ const sendEvent = (ws, routingKey, event) => {
 };
 
 const tickersMock = (ws, markets) => () => {
-  const prevPrice = kLine(parseInt(Date.now() / 1000), 15)[1];
-  const price = kLine(parseInt(Date.now() / 1000), 15)[4];
+  const prevPrice = kLine(parseInt(Date.now() / 1000), 15, 'btcusd')[1];
+  const price = kLine(parseInt(Date.now() / 1000), 15, 'btcusd')[4];
   sendEvent(ws, "global.tickers", Helpers.getTickers(markets, prevPrice, price));
 };
 
@@ -48,23 +48,47 @@ const orderBookUpdateMock = (ws, marketId) => () => {
 */
 
 // Those functions are the same used in k-line mocked API
+const prices = {
+  btcusd: {
+    minDay: 3800,
+    maxDay: 4000,
+  },
+  bchusd: {
+    minDay: 5800,
+    maxDay: 6000,
+  },
+  dashbtc: {
+    minDay: 13,
+    maxDay: 15,
+  },
+  ethbtc: {
+    minDay: 10800,
+    maxDay: 11000,
+  },
+  eurusd: {
+    minDay: 0.9,
+    maxDay: 1,
+  },
+};
+
 const minDay = 6;
 const maxDay = 10;
 const fakePeriod = 86400;
 
-const timeToPrice = (time) => {
-  return minDay + (maxDay - minDay) / 2 * (1 + Math.cos((time / fakePeriod) * 2 * Math.PI));
+const timeToPrice = (time, marketId) => {
+  return prices[marketId].minDay + (prices[marketId].maxDay - prices[marketId].minDay) /
+      2 * (1 + Math.cos((time / fakePeriod) * 2 * Math.PI));
 };
 
 const timeToVolume = (time, periodInSeconds) => {
   return maxDay * 10 / 2 * (1 + Math.cos((time / fakePeriod) * 2 * Math.PI));
 };
 
-const kLine = (time, period) => {
+const kLine = (time, period, marketId) => {
   const periodInSeconds = parseInt(period * 60);
   const roundedTime = parseInt(time / periodInSeconds) * periodInSeconds;
-  const open = timeToPrice(time);
-  const close = timeToPrice(time + periodInSeconds);
+  const open = timeToPrice(time, marketId);
+  const close = timeToPrice(time + periodInSeconds, marketId);
   const delta = (maxDay - minDay) / fakePeriod * periodInSeconds * 2;
   const high = Math.max(open, close) + delta;
   const low = Math.min(open, close) - delta;
@@ -109,18 +133,18 @@ const matchedTradesMock = (ws, marketId) => {
 const klinesMock = (ws, marketId) => () => {
   let at = parseInt(Date.now() / 1000);
 
-  sendEvent(ws, `${marketId}.kline-1m`, kLine(at, 1));
-  sendEvent(ws, `${marketId}.kline-5m`, kLine(at, 5));
-  sendEvent(ws, `${marketId}.kline-15m`, kLine(at, 15));
-  sendEvent(ws, `${marketId}.kline-30m`, kLine(at, 30));
-  sendEvent(ws, `${marketId}.kline-1h`, kLine(at, 60));
-  sendEvent(ws, `${marketId}.kline-2h`, kLine(at, 120));
-  sendEvent(ws, `${marketId}.kline-4h`, kLine(at, 240));
-  sendEvent(ws, `${marketId}.kline-6h`, kLine(at, 360));
-  sendEvent(ws, `${marketId}.kline-12h`, kLine(at, 720));
-  sendEvent(ws, `${marketId}.kline-1d`, kLine(at, 1440));
-  sendEvent(ws, `${marketId}.kline-3d`, kLine(at, 4320));
-  sendEvent(ws, `${marketId}.kline-1w`, kLine(at, 10080));
+  sendEvent(ws, `${marketId}.kline-1m`, kLine(at, 1, marketId));
+  sendEvent(ws, `${marketId}.kline-5m`, kLine(at, 5, marketId));
+  sendEvent(ws, `${marketId}.kline-15m`, kLine(at, 15, marketId));
+  sendEvent(ws, `${marketId}.kline-30m`, kLine(at, 30, marketId));
+  sendEvent(ws, `${marketId}.kline-1h`, kLine(at, 60, marketId));
+  sendEvent(ws, `${marketId}.kline-2h`, kLine(at, 120, marketId));
+  sendEvent(ws, `${marketId}.kline-4h`, kLine(at, 240, marketId));
+  sendEvent(ws, `${marketId}.kline-6h`, kLine(at, 360, marketId));
+  sendEvent(ws, `${marketId}.kline-12h`, kLine(at, 720, marketId));
+  sendEvent(ws, `${marketId}.kline-1d`, kLine(at, 1440, marketId));
+  sendEvent(ws, `${marketId}.kline-3d`, kLine(at, 4320, marketId));
+  sendEvent(ws, `${marketId}.kline-1w`, kLine(at, 10080, marketId));
 };
 class RangerMock {
   constructor(port, markets) {
